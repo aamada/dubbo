@@ -47,6 +47,9 @@ import static com.alibaba.dubbo.config.spring.util.BeanFactoryUtils.addApplicati
 
 /**
  * ServiceFactoryBean
+ * aware:1
+ * init:2
+ * onApplicationEvent:3
  *
  * @export
  */
@@ -76,6 +79,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         this.service = service;
     }
 
+    // ApplicationAware
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
@@ -97,8 +101,10 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    // 最后一步调用
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 容器刷新时, 才会暴露
         if (isDelay() && !isExported() && !isUnexported()) {
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
@@ -116,6 +122,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return supportedApplicationListener && (delay == null || delay == -1);
     }
 
+    // init
     @Override
     @SuppressWarnings({"unchecked", "deprecation"})
     public void afterPropertiesSet() throws Exception {

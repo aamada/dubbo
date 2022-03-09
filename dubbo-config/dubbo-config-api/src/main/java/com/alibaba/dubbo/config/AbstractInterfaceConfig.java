@@ -104,6 +104,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     // the scope for referring/exporting a service, if it's local, it means searching in current JVM only.
     private String scope;
 
+    // 校验 RegistryConfig 配置。实际上，该方法会初始化 RegistryConfig 的配置属性
     protected void checkRegistry() {
         // for backward compatibility
         if (registries == null || registries.isEmpty()) {
@@ -132,10 +133,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    // 校验 ApplicationConfig 配置。实际上，该方法会初始化 ApplicationConfig 的配置属性
     @SuppressWarnings("deprecation")
     protected void checkApplication() {
         // for backward compatibility
         if (application == null) {
+            // 也就是这个配置一定是要配置的
             String applicationName = ConfigUtils.getProperty("dubbo.application.name");
             if (applicationName != null && applicationName.length() > 0) {
                 application = new ApplicationConfig();
@@ -258,6 +261,14 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         return null;
     }
 
+    /**
+     * 校验接口和方法
+     * 1、 接口类非空，并是接口
+     * 2、 方法在接口中已定义
+     *
+     * @param interfaceClass 接口类
+     * @param methods 方法
+     */
     protected void checkInterfaceAndMethods(Class<?> interfaceClass, List<MethodConfig> methods) {
         // interface cannot be null
         if (interfaceClass == null) {

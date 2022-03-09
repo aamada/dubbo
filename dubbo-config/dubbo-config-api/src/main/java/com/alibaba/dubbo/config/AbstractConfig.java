@@ -89,6 +89,8 @@ public abstract class AbstractConfig implements Serializable {
         return value;
     }
 
+    // ApplicationConfig
+    // RegistryConfig
     protected static void appendProperties(AbstractConfig config) {
         if (config == null) {
             return;
@@ -172,43 +174,61 @@ public abstract class AbstractConfig implements Serializable {
         appendParameters(parameters, config, null);
     }
 
+    // 将配置对象的属性添加到参数集合
+    // parameters:用于URL.parameters
+    // config: 配置对象
+    // prefix: 属性前缀, 用于配置项添加到parameters中时的前缀
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
         if (config == null) {
             return;
         }
+        // 获得所有方法的数组, 为下面通过反射获得配置项的值做准备
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
+            // 循环每个方法
             try {
+                // 获得方法名
                 String name = method.getName();
+                // 方法为获取基本类型, public的getting方法
                 if ((name.startsWith("get") || name.startsWith("is"))
                         && !"getClass".equals(name)
                         && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
                         && isPrimitive(method.getReturnType())) {
                     Parameter parameter = method.getAnnotation(Parameter.class);
+                    // 返回值为Object或排除(@Parameter.exclue=true)的配置项, 跳过
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
                         continue;
                     }
+                    // 获取属性名
                     int i = name.startsWith("get") ? 3 : 2;
                     String prop = StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
                     String key;
                     if (parameter != null && parameter.key().length() > 0) {
+                        // 如果有注解, 那么以注解的为主
                         key = parameter.key();
                     } else {
+                        // 没有注解, 那么以解析出来的为准
                         key = prop;
                     }
+                    // 调用这个bean的这个method方法, 得到一个返回值
                     Object value = method.invoke(config);
+                    // 读取值, 并去掉空格
                     String str = String.valueOf(value).trim();
                     if (value != null && str.length() > 0) {
+                        // 转义
                         if (parameter != null && parameter.escaped()) {
                             str = URL.encode(str);
                         }
+                        // 拼接
                         if (parameter != null && parameter.append()) {
+                            // default. 里获取，适用于 ServiceConfig
                             String pre = parameters.get(Constants.DEFAULT_KEY + "." + key);
                             if (pre != null && pre.length() > 0) {
                                 str = pre + "," + str;
                             }
+                            // 通过parameters属性配置, 例如:AbstractMethodConfig.parameters
                             pre = parameters.get(key);
                             if (pre != null && pre.length() > 0) {
                                 str = pre + "," + str;
@@ -217,18 +237,24 @@ public abstract class AbstractConfig implements Serializable {
                         if (prefix != null && prefix.length() > 0) {
                             key = prefix + "." + key;
                         }
+                        // 添加到parameters
                         parameters.put(key, str);
                     } else if (parameter != null && parameter.required()) {
+                        //  如果注解parameter不为空, 且为必填项时, 抛出异常
                         throw new IllegalStateException(config.getClass().getSimpleName() + "." + key + " == null");
                     }
+                    // getParameters(Map map)时
+                    // 动态设置配置项, 拓展出非dubbo内置好的逻辑
                 } else if ("getParameters".equals(name)
                         && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
                         && method.getReturnType() == Map.class) {
+                    // 通过反射获取参数map
                     Map<String, String> map = (Map<String, String>) method.invoke(config, new Object[0]);
                     if (map != null && map.size() > 0) {
                         String pre = (prefix != null && prefix.length() > 0 ? prefix + "." : "");
                         for (Map.Entry<String, String> entry : map.entrySet()) {
+                            // 将这个map中的参数, 放入至parameters中去了
                             parameters.put(pre + entry.getKey().replace('-', '.'), entry.getValue());
                         }
                     }
@@ -239,18 +265,24 @@ public abstract class AbstractConfig implements Serializable {
         }
     }
 
+    // 这里都是一些测试类来调用, 没有在代码里发现有什么地方来调用
     protected static void appendAttributes(Map<Object, Object> parameters, Object config) {
         appendAttributes(parameters, config, null);
     }
 
+    // 将@Parameter(attribute = true)配置对象的属性, 添加到参数集合
+    // 这里会被init方法调用到
     protected static void appendAttributes(Map<Object, Object> parameters, Object config, String prefix) {
+        // 配置对象为空, 直接返回
         if (config == null) {
             return;
         }
+        // 反射得到方法
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
             try {
                 String name = method.getName();
+                // 基本类型, public的, gettting方法
                 if ((name.startsWith("get") || name.startsWith("is"))
                         && !"getClass".equals(name)
                         && Modifier.isPublic(method.getModifiers())
@@ -276,6 +308,7 @@ public abstract class AbstractConfig implements Serializable {
                     }
                 }
             } catch (Exception e) {
+                // 这里有点神奇, 为什么这里会有这种方法呢?
                 throw new IllegalStateException(e.getMessage(), e);
             }
         }

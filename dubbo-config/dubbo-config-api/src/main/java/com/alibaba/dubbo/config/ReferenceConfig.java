@@ -162,9 +162,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     public synchronized T get() {
         if (destroyed) {
+            // 如果已经关掉了, 那么抛出异常
             throw new IllegalStateException("Already destroyed!");
         }
         if (ref == null) {
+            // 初始化去
             init();
         }
         return ref;
@@ -189,40 +191,58 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private void init() {
         if (initialized) {
+            // 如果已经初始化了, 那么返回
             return;
         }
+        // 更换变量
         initialized = true;
         if (interfaceName == null || interfaceName.length() == 0) {
+            // 一定要配置, 你是去引用那一个服务的接口啊?
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
         // get consumer's global configuration
+        // ConsumerConfig
+        // 拼接属性配置(环境变量 + properties属性)到consumerConfig对象
+        checkDefault();
+        // ReferenceConfig
+        // 拼接属性配置(环境变量 + properties属性)到ReferenceConfig对象
         checkDefault();
         appendProperties(this);
+        // ConsumerConfig
+        // 如果没有设置generic属性, 使用consumerConfig.generic属性
         if (getGeneric() == null && getConsumer() != null) {
             setGeneric(getConsumer().getGeneric());
         }
+        // 泛化接口的实现
         if (ProtocolUtils.isGeneric(getGeneric())) {
             interfaceClass = GenericService.class;
         } else {
+            // 普通接口的实现
             try {
                 interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
                         .getContextClassLoader());
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
+            // 又去检查一些东西
             checkInterfaceAndMethods(interfaceClass, methods);
         }
+        // -Dcom.alibaba.xxx.xxxService=dubbo://localhost:20809
         String resolve = System.getProperty(interfaceName);
         String resolveFile = null;
         if (resolve == null || resolve.length() == 0) {
+            // 如果在命令行里面没有配置这个配置, 那么再来看一下, 这个配置, 有没有配置这个文件
             resolveFile = System.getProperty("dubbo.resolve.file");
             if (resolveFile == null || resolveFile.length() == 0) {
+                // 如果还是没有配置, 那么就去读取{user.home}/dubbo-resolve.properties
                 File userResolveFile = new File(new File(System.getProperty("user.home")), "dubbo-resolve.properties");
                 if (userResolveFile.exists()) {
+                    // 如果有这个配置文件, 那么就去获取这个文件的位置
                     resolveFile = userResolveFile.getAbsolutePath();
                 }
             }
             if (resolveFile != null && resolveFile.length() > 0) {
+                // 加载这个配置文件
                 Properties properties = new Properties();
                 FileInputStream fis = null;
                 try {
@@ -237,11 +257,14 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         logger.warn(e.getMessage(), e);
                     }
                 }
+                // 从配置文件中读取到这个配置
                 resolve = properties.getProperty(interfaceName);
             }
         }
         if (resolve != null && resolve.length() > 0) {
+            // 终于得到一个url了
             url = resolve;
+            // 打印一下
             if (logger.isWarnEnabled()) {
                 if (resolveFile != null) {
                     logger.warn("Using default dubbo resolve file " + resolveFile + " replace " + interfaceName + "" + resolve + " to p2p invoke remote service.");
@@ -250,6 +273,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
         }
+        // 从consumerConfig对象中, 读取application, module, registries, monitor配置对象
         if (consumer != null) {
             if (application == null) {
                 application = consumer.getApplication();
@@ -264,6 +288,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 monitor = consumer.getMonitor();
             }
         }
+        // 从ModuleConfig对象中, 读取registries, monitor配置对象
         if (module != null) {
             if (registries == null) {
                 registries = module.getRegistries();
@@ -272,6 +297,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 monitor = module.getMonitor();
             }
         }
+        // 从applicationConfig对象中, 读取registries, monitor配置对象
         if (application != null) {
             if (registries == null) {
                 registries = application.getRegistries();
@@ -280,9 +306,12 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 monitor = application.getMonitor();
             }
         }
+        // 检查applicationConfig配置
         checkApplication();
+        // 检验Stub和Mock相关的配置
         checkStub(interfaceClass);
         checkMock(interfaceClass);
+        // 将side, dubbo, timestamp, pid参数, 添加到map集合中
         Map<String, String> map = new HashMap<String, String>();
         Map<Object, Object> attributes = new HashMap<Object, Object>();
         map.put(Constants.SIDE_KEY, Constants.CONSUMER_SIDE);
@@ -292,6 +321,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
         }
         if (!isGeneric()) {
+            // 获得版本号
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
                 map.put("revision", revision);
@@ -336,6 +366,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
         //attributes are stored by system context.
         StaticContext.getSystemContext().putAll(attributes);
+        // 走创建代理去
         ref = createProxy(map);
         ConsumerModel consumerModel = new ConsumerModel(getUniqueServiceName(), this, ref, interfaceClass.getMethods());
         ApplicationModel.initConsumerModel(getUniqueServiceName(), consumerModel);
@@ -360,6 +391,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
         if (isJvmRefer) {
             URL url = new URL(Constants.LOCAL_PROTOCOL, NetUtils.LOCALHOST, 0, interfaceClass.getName()).addParameters(map);
+            // invoker唤醒, 引用
             invoker = refprotocol.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
@@ -445,8 +477,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private void checkDefault() {
         if (consumer == null) {
+            // 新建一个新的配置
             consumer = new ConsumerConfig();
         }
+        // 又去调用AbstractConfig的方法去了
         appendProperties(consumer);
     }
 

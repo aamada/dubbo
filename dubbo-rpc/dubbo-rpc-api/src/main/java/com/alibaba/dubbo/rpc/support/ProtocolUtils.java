@@ -46,8 +46,10 @@ public class ProtocolUtils {
     }
 
     public static boolean isGeneric(String generic) {
+        // generic不为null, 不为空串, (true, nativejava, bean)
         return generic != null
                 && !"".equals(generic)
+                // true, nativejava, bean
                 && (Constants.GENERIC_SERIALIZATION_DEFAULT.equalsIgnoreCase(generic)  /* Normal generalization cal */
                 || Constants.GENERIC_SERIALIZATION_NATIVE_JAVA.equalsIgnoreCase(generic) /* Streaming generalization call supporting jdk serialization */
                 || Constants.GENERIC_SERIALIZATION_BEAN.equalsIgnoreCase(generic));

@@ -65,6 +65,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * for this case, url protocol = null, url host = home, url path = user1/router.js
  * </ul>
  *
+ * 所有配置最终都将转换为dubbo URL表示,
+ * 并由[服务提供]方生成, 经[注册中心]传递给[消费方],
+ * 各属性对应URL的参数, 参见配置项一览表中的"对应URL参数"列
+ *
+ * URL会作为一个通用的模型, 贯穿整个RPC流程
+ *
  * @see java.net.URL
  * @see java.net.URI
  */
@@ -72,23 +78,44 @@ public final class URL implements Serializable {
 
     private static final long serialVersionUID = -1985165475234910535L;
 
+    /**
+     * 协议名
+     */
     private final String protocol;
 
+    /**
+     * 用户名
+     */
     private final String username;
 
+    /**
+     * 密码
+     */
     private final String password;
 
     // by default, host to registry
+    /**
+     * 地址
+     */
     private final String host;
 
     // by default, port to registry
+    /**
+     * 端口号
+     */
     private final int port;
 
+    /**
+     * 路径(服务名)
+     */
     private final String path;
 
+    /**
+     * 参数集合
+     */
     private final Map<String, String> parameters;
 
-    // ==== cache ====
+    // ==== cache ==== 缓存
 
     private volatile transient Map<String, Number> numbers;
 
