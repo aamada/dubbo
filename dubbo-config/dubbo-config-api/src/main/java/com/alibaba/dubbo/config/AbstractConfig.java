@@ -91,20 +91,33 @@ public abstract class AbstractConfig implements Serializable {
 
     // ApplicationConfig
     // RegistryConfig
+    // dubbo.properties配置属性能够映射到ApplicationConfig, ProtocolConfig以及RegistryConfig
     protected static void appendProperties(AbstractConfig config) {
         if (config == null) {
             return;
         }
+        // 例如ApplicationConfig -> prefix=dubbo.application.
         String prefix = "dubbo." + getTagName(config.getClass()) + ".";
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
             try {
                 String name = method.getName();
+                // 方法名长度大于3
+                // 以set开头
+                // 是public方法
+                // 参数为1
+                // 方法唯一参数是原型模式
+                // setQosEnable
                 if (name.length() > 3 && name.startsWith("set") && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 1 && isPrimitive(method.getParameterTypes()[0])) {
+                    // 获得属性名, 例如'ApplicationConfig#setName()'方法, 对应属性名为name
+                    // setQosEnable
+                    // property=qosEnable
+                    // 就是把set后的第一个字母给换成小写的, 然后截取第4个字母后的字符串
                     String property = StringUtils.camelToSplitName(name.substring(3, 4).toLowerCase() + name.substring(4), ".");
 
                     String value = null;
+                    // [启动参数变量]优先从带有'Config#id'的配置中获取, 例如:'dubbo.application.demo-provider.name'
                     if (config.getId() != null && config.getId().length() > 0) {
                         String pn = prefix + config.getId() + "." + property;
                         value = System.getProperty(pn);
@@ -113,25 +126,37 @@ public abstract class AbstractConfig implements Serializable {
                         }
                     }
                     if (value == null || value.length() == 0) {
+                        // pn = dubbo.application.qosEnable
                         String pn = prefix + property;
                         value = System.getProperty(pn);
                         if (!StringUtils.isBlank(value)) {
                             logger.info("Use System Property " + pn + " to config dubbo");
                         }
                     }
+                    // 到这里了, 那么从系统参数中, 没有获取这个参数
                     if (value == null || value.length() == 0) {
+                        // 覆盖优先级:启动参数变量->xml配置->properties配置, 因此需要使用getter判断xml是否已经设置
                         Method getter;
                         try {
+                            // getQosEnable
+                            // name = setQosEnable
+                            // name.substring(3) = QosEnable
+                            // get + QosEnable = getQosEnable
                             getter = config.getClass().getMethod("get" + name.substring(3));
                         } catch (NoSuchMethodException e) {
+                            // 如果有异常, 那么试一下, isQosEnable的方法喽
                             try {
+                                // is + QosEnable
                                 getter = config.getClass().getMethod("is" + name.substring(3));
                             } catch (NoSuchMethodException e2) {
                                 getter = null;
                             }
                         }
                         if (getter != null) {
+                            // 得到一个get方法, 调用这个get后, 得到一个null
                             if (getter.invoke(config) == null) {
+                                // prefix = dubbo.application.
+                                // property = qosEnable
                                 if (config.getId() != null && config.getId().length() > 0) {
                                     value = ConfigUtils.getProperty(prefix + config.getId() + "." + property);
                                 }
@@ -149,6 +174,8 @@ public abstract class AbstractConfig implements Serializable {
                         }
                     }
                     if (value != null && value.length() > 0) {
+                        // 将这个参数值, 给设置到参数中去
+                        // 将这个参数给转换这个类型的参数
                         method.invoke(config, convertPrimitive(method.getParameterTypes()[0], value));
                     }
                 }
@@ -158,14 +185,19 @@ public abstract class AbstractConfig implements Serializable {
         }
     }
 
+    // ProviderConfig
     private static String getTagName(Class<?> cls) {
+        // providerConfig
         String tag = cls.getSimpleName();
         for (String suffix : SUFFIXES) {
+            // providerConfig
             if (tag.endsWith(suffix)) {
+                // tag = provider
                 tag = tag.substring(0, tag.length() - suffix.length());
                 break;
             }
         }
+        // 转换成小写的
         tag = tag.toLowerCase();
         return tag;
     }
@@ -283,24 +315,40 @@ public abstract class AbstractConfig implements Serializable {
             try {
                 String name = method.getName();
                 // 基本类型, public的, gettting方法
+                // 方法名以'get'开头 或者 以 'is'开头
+                // 不是'getClass'方法
+                // public方法
+                // 参数个数为0
+                // 返回值为原型模式
                 if ((name.startsWith("get") || name.startsWith("is"))
                         && !"getClass".equals(name)
                         && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
                         && isPrimitive(method.getReturnType())) {
                     Parameter parameter = method.getAnnotation(Parameter.class);
+                    // 没有@Parameter的注解
                     if (parameter == null || !parameter.attribute())
+                        // 然后继续
                         continue;
                     String key;
                     parameter.key();
                     if (parameter.key().length() > 0) {
+                        // 得到一个key名
+                        // 如果配置了, 那么得到 了一个key
                         key = parameter.key();
                     } else {
+                        // 截取名称
+                        // 如果没有配置这个key, 那么就去截取这个方法的名称
                         int i = name.startsWith("get") ? 3 : 2;
+                        // 名称
+                        // getQosEnable
+                        // 首字母转小写, 再截取后面的osEnable
                         key = name.substring(i, i + 1).toLowerCase() + name.substring(i + 1);
                     }
+                    // 走喽, 去调用这个方法, 得到一个值
                     Object value = method.invoke(config);
                     if (value != null) {
+                        // 如果这个值不为null
                         if (prefix != null && prefix.length() > 0) {
                             key = prefix + "." + key;
                         }
@@ -314,6 +362,7 @@ public abstract class AbstractConfig implements Serializable {
         }
     }
 
+    // 原型模式, 8种, Object and String
     private static boolean isPrimitive(Class<?> type) {
         return type.isPrimitive()
                 || type == String.class
@@ -328,6 +377,7 @@ public abstract class AbstractConfig implements Serializable {
                 || type == Object.class;
     }
 
+    // String and Object 没有
     private static Object convertPrimitive(Class<?> type, String value) {
         if (type == char.class || type == Character.class) {
             return value.length() > 0 ? value.charAt(0) : '\0';
@@ -442,14 +492,21 @@ public abstract class AbstractConfig implements Serializable {
     }
 
     protected void appendAnnotation(Class<?> annotationClass, Object annotation) {
+        // 一系列方法名
         Method[] methods = annotationClass.getMethods();
         for (Method method : methods) {
+            // 不是Object类
+            // 返回值不为void
+            // 参数个数为0
+            // 是public方法
+            // 不是静态方法
             if (method.getDeclaringClass() != Object.class
                     && method.getReturnType() != void.class
                     && method.getParameterTypes().length == 0
                     && Modifier.isPublic(method.getModifiers())
                     && !Modifier.isStatic(method.getModifiers())) {
                 try {
+                    // 方法名
                     String property = method.getName();
                     if ("interfaceClass".equals(property) || "interfaceName".equals(property)) {
                         property = "interface";
