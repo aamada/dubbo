@@ -18,6 +18,7 @@ package com.alibaba.dubbo.config.spring.context.annotation;
 
 import com.alibaba.dubbo.config.AbstractConfig;
 
+import com.alibaba.dubbo.config.ApplicationConfig;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
@@ -41,9 +42,12 @@ public class DubboConfigBindingsRegistrar implements ImportBeanDefinitionRegistr
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 
+        // 获得@EnableDubboConfigBindings注解, 上的属性
         AnnotationAttributes attributes = AnnotationAttributes.fromMap(
                 importingClassMetadata.getAnnotationAttributes(EnableDubboConfigBindings.class.getName()));
 
+        // 获得属性上的value
+        // 得到这个注解@EnableDubboConfigBindings({上的信息
         AnnotationAttributes[] annotationAttributes = attributes.getAnnotationArray("value");
 
         DubboConfigBindingRegistrar registrar = new DubboConfigBindingRegistrar();
@@ -51,6 +55,9 @@ public class DubboConfigBindingsRegistrar implements ImportBeanDefinitionRegistr
 
         for (AnnotationAttributes element : annotationAttributes) {
 
+            // 去注册每一个
+            // @EnableDubboConfigBinding(prefix = "dubbo.application", type = ApplicationConfig.class),
+            // DubboConfigBindingRegistrar它居然是这个
             registrar.registerBeanDefinitions(element, registry);
 
         }

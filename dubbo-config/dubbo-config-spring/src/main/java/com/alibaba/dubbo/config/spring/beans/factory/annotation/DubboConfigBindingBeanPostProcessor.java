@@ -54,11 +54,13 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     /**
      * The prefix of Configuration Properties
+     * 配置属性的前缀
      */
     private final String prefix;
 
     /**
      * Binding Bean Name
+     * bean的名称
      */
     private final String beanName;
 
@@ -81,11 +83,10 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-
+        // 判断必须是beanName, 并且是AbstractConfig类型
         if (beanName.equals(this.beanName) && bean instanceof AbstractConfig) {
-
             AbstractConfig dubboConfig = (AbstractConfig) bean;
-
+            // 设置属性到dubboConfig中
             bind(prefix, dubboConfig);
 
             customize(beanName, dubboConfig);
@@ -138,8 +139,9 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     }
 
+    // 初始化dubbo配置绑定
     private void initDubboConfigBinder() {
-
+        // 获得(创建)DubboCnofigBinder对象
         if (dubboConfigBinder == null) {
             try {
                 dubboConfigBinder = applicationContext.getBean(DubboConfigBinder.class);
@@ -154,6 +156,7 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     }
 
+    // 初始化用户配置bean
     private void initConfigBeanCustomizers() {
 
         Collection<DubboConfigBeanCustomizer> configBeanCustomizers =
@@ -167,13 +170,15 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
     /**
      * Create {@link DubboConfigBinder} instance.
      *
-     * @param environment
+     * @param environment 属性环境
      * @return {@link DefaultDubboConfigBinder}
      */
     protected DubboConfigBinder createDubboConfigBinder(Environment environment) {
+        // 创建DefaultDubboConfigBinder'对象
         DefaultDubboConfigBinder defaultDubboConfigBinder = new DefaultDubboConfigBinder();
         defaultDubboConfigBinder.setEnvironment(environment);
 
+        // 忽略属性
         defaultDubboConfigBinder.setIgnoreUnknownFields(true);
         defaultDubboConfigBinder.setIgnoreInvalidFields(true);
 

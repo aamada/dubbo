@@ -13,6 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ *
+ * 通过@EnableDubbo可以在指定的包名下（通过scanBasePackages属性）， 或者指定的类中（通过scanBasePackageClasses属性）
+ * 扫描Dubbo的服务提供者（@Service注解）以及Dubbo的服务消费者（以@Reference注解）
+ *
+ * 扫描到Dubbo的服务提供方和消费之后， 对其做相应的组装并初始化， 并最终完成服务暴露或者引用的工作
  */
 package com.alibaba.dubbo.config.spring.context.annotation;
 
@@ -47,6 +53,8 @@ public @interface EnableDubbo {
 
     /**
      * Base packages to scan for annotated @Service classes.
+     * 配置包扫描的路径
+     *
      * <p>
      * Use {@link #scanBasePackageClasses()} for a type-safe alternative to String-based
      * package names.
@@ -62,6 +70,8 @@ public @interface EnableDubbo {
      * scan for annotated @Service classes. The package of each class specified will be
      * scanned.
      *
+     * 配置扫描的类
+     *
      * @return classes from the base packages to scan
      * @see DubboComponentScan#basePackageClasses
      */
@@ -71,6 +81,8 @@ public @interface EnableDubbo {
 
     /**
      * It indicates whether {@link AbstractConfig} binding to multiple Spring Beans.
+     *
+     * 配置@EnableDubboConfig注解， 配置是否绑定到多个spring Bean上
      *
      * @return the default value is <code>false</code>
      * @see EnableDubboConfig#multiple()
