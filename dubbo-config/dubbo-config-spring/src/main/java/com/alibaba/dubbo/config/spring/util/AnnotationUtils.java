@@ -237,12 +237,16 @@ public abstract class AnnotationUtils {
     public static Map<String, Object> getAttributes(Annotation annotation, PropertyResolver propertyResolver,
                                                     boolean ignoreDefaultValue, String... ignoreAttributeNames) {
 
+        // 忽略的一些属性
         Set<String> ignoreAttributeNamesSet = new HashSet<String>(arrayToList(ignoreAttributeNames));
 
+        // 从注解中得到一些属性
         Map<String, Object> attributes = getAnnotationAttributes(annotation);
 
+        // 真的一些属性
         Map<String, Object> actualAttributes = new LinkedHashMap<String, Object>();
 
+        // 遍历从注解上解析到一些属性参数
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
 
             String attributeName = entry.getKey();

@@ -58,8 +58,11 @@ class ServiceBeanNameBuilder {
     }
 
     private ServiceBeanNameBuilder(Service service, Class<?> interfaceClass, Environment environment) {
+        // interfaceClassName, environment
         this(resolveInterfaceName(service, interfaceClass), environment);
+        // group
         this.group(service.group());
+        // version
         this.version(service.version());
     }
 
@@ -97,16 +100,26 @@ class ServiceBeanNameBuilder {
         return this;
     }
 
+    // ServiceBean
+    // interfaceClassName
+    // version
+    // group
     public String build() {
+        // ServiceBean:
         StringBuilder beanNameBuilder = new StringBuilder("ServiceBean").append(SEPARATOR);
         // Required
+        // ServiceBean:interfaceClassName:
         append(beanNameBuilder, interfaceClassName);
         // Optional
+        // ServiceBean:interfaceClassName:version:
         append(beanNameBuilder, version);
+        // ServiceBean:interfaceClassName:version:group:
         append(beanNameBuilder, group);
         // Build and remove last ":"
+        // ServiceBean:interfaceClassName:version:group
         String rawBeanName = beanNameBuilder.substring(0, beanNameBuilder.length() - 1);
         // Resolve placeholders
+        // 解析占位符
         return environment.resolvePlaceholders(rawBeanName);
     }
 }

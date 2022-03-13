@@ -29,6 +29,8 @@ import static com.alibaba.dubbo.config.spring.util.AnnotationUtils.getAttributes
 /**
  * {@link Annotation} {@link PropertyValues} Adapter
  *
+ * 它是一个适配器
+ *
  * @see Annotation
  * @see PropertyValues
  * @since 2.5.11
@@ -44,9 +46,14 @@ class AnnotationPropertyValuesAdapter implements PropertyValues {
     private final PropertyValues delegate;
 
     public AnnotationPropertyValuesAdapter(Annotation annotation, PropertyResolver propertyResolver, boolean ignoreDefaultValue, String... ignoreAttributeNames) {
+        // 注解
         this.annotation = annotation;
+        // 属性解析器
         this.propertyResolver = propertyResolver;
+        // 忽略的属性
         this.ignoreDefaultValue = ignoreDefaultValue;
+        // 委派器, 真正干活的人
+        // MutablePropertyValues
         this.delegate = adapt(annotation, ignoreDefaultValue, ignoreAttributeNames);
     }
 

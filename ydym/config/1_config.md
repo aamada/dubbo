@@ -59,15 +59,27 @@
       >
    2. @DubboComponentScan`配置要扫描@Service和@Reference注解的包或者类们, 从而创建对应的bean对象`
 
-      > 1. DubboComponentScanRegistrar
-      >    1. getPackagesToScan(importingClassMetadata);
-      >    2. registerServiceAnnotationBeanPostProcessor(packagesToScan, registry);
-      >    3. registerReferenceAnnotationBeanPostProcessor(registry);
-      > 2. ServiceAnnotationBeanPostProcessor
-      >    1. postProcessBeanDefinitionRegistry
-      >    2. resolvePackagesToScan
-      >    3. findServiceBeanDefinitionHolders
-      >    4. registerServiceBean
+      > 1. DubboComponentScanRegistrar, Buddo启动类上的一个引用配置的顶级接口， 它会去注册一些后续使用的BeanPostProcess处理器
+      >    1. getPackagesToScan(importingClassMetadata);// 得到将要扫描的包
+      >    2. registerServiceAnnotationBeanPostProcessor(packagesToScan, registry);// 注册一个后处理器， 去扫描那些Dubbo Service标注的类
+      >    3. registerReferenceAnnotationBeanPostProcessor(registry);// 注册一个后处理器， 去扫描那些@Reference标注的类
+      > 2. ServiceAnnotationBeanPostProcessor// 扫描被@Service标注的类
+      >    1. postProcessBeanDefinitionRegistry执行这个后处理器
+      >    2. resolvePackagesToScan// 解析包路径
+      >    3. findServiceBeanDefinitionHolders// 得到BeanDefinition持有器
+      >    4. registerServiceBean// 注册这些；Bean
+      >       1. 创建一个BeanDefinition扫描器*DubboClassPathBeanDefinitionScanner*， 这里也是可以学习的点， 我们也可以这样的
+      >       2. 解析得到一个名称生成器BeanNameGenerator
+      >       3. 给这个扫描器设置它要扫描的注解@Service
+      >
+      >          *scanner.addIncludeFilter(new AnnotationTypeFilter(Service.class))*
+      >       4. 遍历包数组
+      >
+      >          1. 这个包扫描器去扫描这个包*scanner.scan(packageToScan);*
+      >          2. 找到这个BeanDefinition持有器*findServiceBeanDefinitionHolders*
+      >          3. 注册这个Bean到容器中去*registerServiceBean*
+      >             1. 这里挺有意思的, 可以深究
+      >             2. buildServiceBeanDefinition(构建这个bean的定义, 里面有许多的自定义配置属性)
       > 3. ReferenceAnnotationBeanPostProcessor
       >    1. ReferenceAnnotationBeanPostProcessor
       >    2. doGetInjectedBean
