@@ -218,16 +218,22 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
 
 
     private AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata buildAnnotatedMetadata(final Class<?> beanClass) {
+        // 找到这个注解的字段元数据
         Collection<AnnotationInjectedBeanPostProcessor.AnnotatedFieldElement> fieldElements = findFieldAnnotationMetadata(beanClass);
+        // 找到这个注解的方法的元数据
         Collection<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> methodElements = findAnnotatedMethodMetadata(beanClass);
+        // 然后, 构建不少的元数据
         return new AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata(beanClass, fieldElements, methodElements);
 
     }
 
+    // 找到注入的元数据
     public InjectionMetadata findInjectionMetadata(String beanName, Class<?> clazz, PropertyValues pvs) {
         // Fall back to class name as cache key, for backwards compatibility with custom callers.
+        // 缓存的key
         String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
         // Quick check on the concurrent map first, with minimal locking.
+        // 从缓存中将元数据拿起来
         AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
         if (InjectionMetadata.needsRefresh(metadata, clazz)) {
             synchronized (this.injectionMetadataCache) {
@@ -237,6 +243,7 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
                         metadata.clear(pvs);
                     }
                     try {
+                        // 构建注解的元数据
                         metadata = buildAnnotatedMetadata(clazz);
                         this.injectionMetadataCache.put(cacheKey, metadata);
                     } catch (NoClassDefFoundError err) {
@@ -246,6 +253,7 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
                 }
             }
         }
+        // 返回这个元数据
         return metadata;
     }
 
@@ -331,19 +339,15 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
      */
     protected Object getInjectedObject(A annotation, Object bean, String beanName, Class<?> injectedType,
                                        InjectionMetadata.InjectedElement injectedElement) throws Exception {
-
         String cacheKey = buildInjectedObjectCacheKey(annotation, bean, beanName, injectedType, injectedElement);
-
         Object injectedObject = injectedObjectsCache.get(cacheKey);
-
         if (injectedObject == null) {
             injectedObject = doGetInjectedBean(annotation, bean, beanName, injectedType, injectedElement);
             // Customized inject-object if necessary
+            // 缓存起来
             injectedObjectsCache.putIfAbsent(cacheKey, injectedObject);
         }
-
         return injectedObject;
-
     }
 
     /**
@@ -482,6 +486,7 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
         @Override
         protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {
 
+            // 属性的类型
             Class<?> injectedType = pd.getPropertyType();
 
             injectedBean = getInjectedObject(annotation, bean, beanName, injectedType, this);

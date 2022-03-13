@@ -169,6 +169,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             // 初始化去
             init();
         }
+        // ref = createProxy(map);
+        // 创建代理
         return ref;
     }
 
@@ -392,6 +394,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (isJvmRefer) {
             URL url = new URL(Constants.LOCAL_PROTOCOL, NetUtils.LOCALHOST, 0, interfaceClass.getName()).addParameters(map);
             // invoker唤醒, 引用
+            // 协议
             invoker = refprotocol.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
@@ -472,6 +475,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             logger.info("Refer dubbo service " + interfaceClass.getName() + " from url " + invoker.getUrl());
         }
         // create service proxy
+        // 创建服务的代理类
         return (T) proxyFactory.getProxy(invoker);
     }
 

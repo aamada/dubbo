@@ -42,14 +42,19 @@ abstract class AbstractAnnotationConfigBeanBuilder<A extends Annotation, B exten
 
     protected final Log logger = LogFactory.getLog(getClass());
 
+    // 注解
     protected final A annotation;
 
+    // 上下文
     protected final ApplicationContext applicationContext;
 
+    // classlaod
     protected final ClassLoader classLoader;
 
+    // 对象
     protected Object bean;
 
+    // 接口类
     protected Class<?> interfaceClass;
 
     protected AbstractAnnotationConfigBeanBuilder(A annotation, ClassLoader classLoader,
@@ -66,21 +71,29 @@ abstract class AbstractAnnotationConfigBeanBuilder<A extends Annotation, B exten
     /**
      * Build {@link B}
      *
+     * 构建这个bean
+     *
+     * ReferenceAnnotationBeanPostProcessor被这个bean调用
+     *
      * @return non-null
      * @throws Exception
      */
     public final B build() throws Exception {
 
+        // 检测依赖
         checkDependencies();
 
+        // 构建去了
         B bean = doBuild();
 
+        // 配置bean
         configureBean(bean);
 
         if (logger.isInfoEnabled()) {
             logger.info("The bean[type:" + bean.getClass().getSimpleName() + "] has been built.");
         }
 
+        // 返回
         return bean;
 
     }

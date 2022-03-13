@@ -34,7 +34,6 @@
 ![](../7_config.png)
 
 1. EnableDubbo
-
    1. @EnableDubboConfig
 
       > 1. DubboConfigConfigurationRegistrar, 实现ImportBeanDefinitionRegistrar接口， 处理@EnableDubboConfig注解，注册相应的DubboConfigConfiguration到Spring容器中。
@@ -44,59 +43,61 @@
       >    `后者Multiple, 其上的注解, prefix都是复数, 且有multiple=true`
       > 3. @EnableDubboConfigBindings
       >    `DubboConfigBindingsRegistrar:表明使用DubboConfigBindingsRegistrar类进行导入`
-      >    1. `DubboConfigBindingsRegistrar实现ImportBeanDefinitionRegistrar, EnvironmentAware接口, 处理@EnableDuboConfigBindings注解, 注册相应的Dubbo AbstractConfig到Spring容器中`
-      >       ![解析EnableDubboConfigBindings注解](../8_config.png)
+      >    3.1. `DubboConfigBindingsRegistrar实现ImportBeanDefinitionRegistrar, EnvironmentAware接口, 处理@EnableDuboConfigBindings注解, 注册相应的Dubbo AbstractConfig到Spring容器中`
+      >    ![解析EnableDubboConfigBindings注解](../8_config.png)
       > 4. @EnableDubboConfigBinding
-      >    1. DubboConfigBindingRegistrar注册相应的AbstractConfig到容器中
-      >       1. registerBeanDefinitions
-      >          1. resolveMultipleBeanNames
-      >          2. resolveSingleBeanName
-      >          3. registerDubboConfigBean
-      >          4. registerDubboConfigBindingBeanPostProcessor
+      >    4.1. DubboConfigBindingRegistrar注册相应的AbstractConfig到容器中
+      >    4.1.1. registerBeanDefinitions
+      >    4.1.1.1. resolveMultipleBeanNames
+      >    4.1.1.2. resolveSingleBeanName
+      >    4.1.1.3. registerDubboConfigBean
+      >    4.1.1.4. registerDubboConfigBindingBeanPostProcessor
       > 5. DubboConfigBindingBeanPostProcessor
-      >    1. DubboConfigBinder数据绑定
-      >    2. DefaultDubboConfigBinder将配置属性设置到Dubbo config对象中
+      >    5.1. DubboConfigBinder数据绑定
+      >    5.2. DefaultDubboConfigBinder将配置属性设置到Dubbo config对象中
       >
-   2. @DubboComponentScan`配置要扫描@Service和@Reference注解的包或者类们, 从而创建对应的bean对象`
+   2. @DubboComponentScan`配置要扫描@Service和@Reference注解的包或者类们, 从而创建对应的bean对象
 
       > 1. DubboComponentScanRegistrar, Buddo启动类上的一个引用配置的顶级接口， 它会去注册一些后续使用的BeanPostProcess处理器
-      >    1. getPackagesToScan(importingClassMetadata);// 得到将要扫描的包
-      >    2. registerServiceAnnotationBeanPostProcessor(packagesToScan, registry);// 注册一个后处理器， 去扫描那些Dubbo Service标注的类
-      >    3. registerReferenceAnnotationBeanPostProcessor(registry);// 注册一个后处理器， 去扫描那些@Reference标注的类
+      >    1.1. getPackagesToScan(importingClassMetadata);// 得到将要扫描的包
+      >    1.2. registerServiceAnnotationBeanPostProcessor(packagesToScan, registry);// 注册一个后处理器， 去扫描那些Dubbo Service标注的类
+      >    1.3. registerReferenceAnnotationBeanPostProcessor(registry);// 注册一个后处理器， 去扫描那些@Reference标注的类
       > 2. ServiceAnnotationBeanPostProcessor// 扫描被@Service标注的类
-      >    1. postProcessBeanDefinitionRegistry执行这个后处理器
-      >    2. resolvePackagesToScan// 解析包路径
-      >    3. findServiceBeanDefinitionHolders// 得到BeanDefinition持有器
-      >    4. registerServiceBean// 注册这些；Bean
-      >       1. 创建一个BeanDefinition扫描器*DubboClassPathBeanDefinitionScanner*， 这里也是可以学习的点， 我们也可以这样的
-      >       2. 解析得到一个名称生成器BeanNameGenerator
-      >       3. 给这个扫描器设置它要扫描的注解@Service
+      >    2.1. postProcessBeanDefinitionRegistry执行这个后处理器
+      >    2.2. resolvePackagesToScan// 解析包路径
+      >    2.3. findServiceBeanDefinitionHolders// 得到BeanDefinition持有器
+      >    2.4. registerServiceBean// 注册这些；Bean
+      >    2.4.1. 创建一个BeanDefinition扫描器*DubboClassPathBeanDefinitionScanner*， 这里也是可以学习的点， 我们也可以这样的
+      >    2.4.2. 解析得到一个名称生成器BeanNameGenerator
+      >    2.4.3. 给这个扫描器设置它要扫描的注解@Service
       >
-      >          *scanner.addIncludeFilter(new AnnotationTypeFilter(Service.class))*
-      >       4. 遍历包数组
+      >    *scanner.addIncludeFilter(new AnnotationTypeFilter(Service.class))*
+      >    2.4.4. 遍历包数组
       >
-      >          1. 这个包扫描器去扫描这个包*scanner.scan(packageToScan);*
-      >          2. 找到这个BeanDefinition持有器*findServiceBeanDefinitionHolders*
-      >          3. 注册这个Bean到容器中去*registerServiceBean*
-      >             1. 这里挺有意思的, 可以深究
-      >             2. buildServiceBeanDefinition(构建这个bean的定义, 里面有许多的自定义配置属性)
-      > 3. ReferenceAnnotationBeanPostProcessor
-      >    1. ReferenceAnnotationBeanPostProcessor
-      >    2. doGetInjectedBean
-      >    3. onApplicationEvent
-      >    4. ReferenceBeanBuilder
-      > 4. a
-      > 5. a
-      > 6. a
-      > 7. a
-      > 8. a
-      > 9. a
-      > 10. a
-      > 11. a
-      > 12. a
-      > 13. a
-      > 14. a
-      > 15. a
-      > 16. a
-      > 17. a
+      >    2.4.4.1. 这个包扫描器去扫描这个包*scanner.scan(packageToScan);*
+      >    2.4.4.2. 找到这个BeanDefinition持有器*findServiceBeanDefinitionHolders*
+      >    2.4.4.3. 注册这个Bean到容器中去*registerServiceBean*
+      >    2.4.4.3.1. 这里挺有意思的, 可以深究
+      >    2.4.4.3.2. buildServiceBeanDefinition(构建这个bean的定义, 里面有许多的自定义配置属性)
+      >
+      >    3. ReferenceAnnotationBeanPostProcessor
+      >       3.1. ReferenceAnnotationBeanPostProcessor
+      >       3.1.1. AnnotationInjectedBeanPostProcessor#postProcessPropertyValues从这里开始划算了
+      >       3.1.1.1. element#inject(target, beanName, pvs);元素注入
+      >       3.1.1.1.1. AnnotatedMethodElement#inject
+      >       3.1.1.1.1.1. AnnotationInjectedBeanPostProcessor#getInjectedObject
+      >       3.1.1.1.1.1.1. ReferenceAnnotationBeanPostProcessor#doGetInjectedBean
+      >       3.1.1.1.1.1.1.1. buildReferenceBeanIfAbsent
+      >       3.1.1.1.1.1.1.1.1. buildReferenceBeanIfAbsent#build
+      >       3.1.1.1.1.1.1.1.1.1. 检查依赖
+      >       3.1.1.1.1.1.1.1.1.2. 生成
+      >       3.1.1.1.1.1.1.1.1.3. 配置
+      >       3.1.1.1.1.1.1.2. 缓存起来
+      >       3.1.1.1.1.1.1.3. buildProxy(referencedBeanName, referenceBean, injectedType);创建代理
+      >       3.1.1.1.1.2. 调用属性的set方法, 将这个新建的bean给设置进去
+      >       3.2. doGetInjectedBean
+      >       3.2.1. 获得注入的bean
+      >       3.3. onApplicationEvent
+      >       3.3.1. 暴露事件
+      >       3.4. ReferenceBeanBuilder
       >
