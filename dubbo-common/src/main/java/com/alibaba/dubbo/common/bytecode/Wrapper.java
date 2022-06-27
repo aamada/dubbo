@@ -42,21 +42,25 @@ public abstract class Wrapper {
     private static final Wrapper OBJECT_WRAPPER = new Wrapper() {
         @Override
         public String[] getMethodNames() {
+            // getClass, hashCode, toString, equals
             return OBJECT_METHODS;
         }
 
         @Override
         public String[] getDeclaredMethodNames() {
+            // getClass, hashCode, toString, equals
             return OBJECT_METHODS;
         }
 
         @Override
         public String[] getPropertyNames() {
+            // 空
             return EMPTY_STRING_ARRAY;
         }
 
         @Override
         public Class<?> getPropertyType(String pn) {
+            // 类型
             return null;
         }
 
@@ -87,6 +91,7 @@ public abstract class Wrapper {
             throw new NoSuchMethodException("Method [" + mn + "] not found.");
         }
     };
+    // 包装了多少个类
     private static AtomicLong WRAPPER_CLASS_COUNTER = new AtomicLong(0);
 
     /**
@@ -96,10 +101,13 @@ public abstract class Wrapper {
      * @return Wrapper instance(not null).
      */
     public static Wrapper getWrapper(Class<?> c) {
+        // 不能包装动态类
         while (ClassGenerator.isDynamicClass(c)) // can not wrapper on dynamic class.
+            // 得到其父类
             c = c.getSuperclass();
 
         if (c == Object.class)
+            // 是Object.class
             return OBJECT_WRAPPER;
 
         Wrapper ret = WRAPPER_MAP.get(c);
@@ -112,9 +120,12 @@ public abstract class Wrapper {
 
     private static Wrapper makeWrapper(Class<?> c) {
         if (c.isPrimitive())
+            // 不能为私有的包装类
             throw new IllegalArgumentException("Can not create wrapper for primitive type: " + c);
 
+        // 类名
         String name = c.getName();
+        // 类加载器
         ClassLoader cl = ClassHelper.getClassLoader(c);
 
         StringBuilder c1 = new StringBuilder("public void setPropertyValue(Object o, String n, Object v){ ");
