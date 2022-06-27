@@ -40,12 +40,13 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbortPolicyWithReport.class);
 
+    // 线程名称
     private final String threadName;
-
+    // url
     private final URL url;
 
     private static volatile long lastPrintTime = 0;
-
+    // 信号量
     private static Semaphore guard = new Semaphore(1);
 
     public AbortPolicyWithReport(String threadName, URL url) {
@@ -61,7 +62,9 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
                 threadName, e.getPoolSize(), e.getActiveCount(), e.getCorePoolSize(), e.getMaximumPoolSize(), e.getLargestPoolSize(),
                 e.getTaskCount(), e.getCompletedTaskCount(), e.isShutdown(), e.isTerminated(), e.isTerminating(),
                 url.getProtocol(), url.getIp(), url.getPort());
+        // 打印日志报告
         logger.warn(msg);
+        // 打印jstack, 分析线程状态
         dumpJStack();
         throw new RejectedExecutionException(msg);
     }
@@ -81,23 +84,31 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {
+                // 什么东西都是向url中获取, 这个url就是一切
+                // 打印到什么目录呢?
                 String dumpPath = url.getParameter(Constants.DUMP_DIRECTORY, System.getProperty("user.home"));
 
+                // 日期
                 SimpleDateFormat sdf;
 
+                // 系统名称
                 String OS = System.getProperty("os.name").toLowerCase();
 
                 // window system don't support ":" in file name
+                // win系统
                 if(OS.contains("win")){
                     sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
                 }else {
+                    // 其它的系统
                     sdf = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
                 }
 
                 String dateStr = sdf.format(new Date());
                 FileOutputStream jstackStream = null;
                 try {
+                    // 目录/Dubbo_JStack.log.日期
                     jstackStream = new FileOutputStream(new File(dumpPath, "Dubbo_JStack.log" + "." + dateStr));
+                    // 得到一个流
                     JVMUtil.jstack(jstackStream);
                 } catch (Throwable t) {
                     logger.error("dump jstack error", t);

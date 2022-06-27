@@ -16,6 +16,8 @@
  */
 package com.alibaba.dubbo.examples.validation;
 
+import com.alibaba.dubbo.common.URL;
+import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.examples.validation.api.ValidationParameter;
 import com.alibaba.dubbo.examples.validation.api.ValidationService;
 
@@ -125,4 +127,18 @@ public class ValidationTest {
         }
     }
 
+    @Test
+    public void test01() {
+        ExtensionLoader<SpiService> extensionLoader = ExtensionLoader.getExtensionLoader(SpiService.class);
+        SpiService adaptiveExtension = extensionLoader.getAdaptiveExtension();
+        URL url = URL.valueOf("file://localhost/test");
+        System.err.println(adaptiveExtension.m1(url));
+//        System.err.println(adaptiveExtension.m2(url));
+        URL url1 = URL.valueOf("file://localhost/test?spi.service=impl2");
+        System.err.println(adaptiveExtension.m1(url1));
+        URL url2 = URL.valueOf("file://localhost/test?spi.service=impl3");
+        System.err.println(adaptiveExtension.m1(url2));
+
+        System.err.println("OK");
+    }
 }

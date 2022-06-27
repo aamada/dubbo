@@ -1,0 +1,3 @@
+impl1=com.alibaba.dubbo.examples.validation.SpiServiceImpl1
+impl2=com.alibaba.dubbo.examples.validation.SpiServiceImpl2
+impl3=com.alibaba.dubbo.examples.validation.SpiServiceImpl3

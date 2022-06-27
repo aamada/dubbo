@@ -26,6 +26,7 @@ import java.lang.management.ThreadMXBean;
 public class JVMUtil {
     public static void jstack(OutputStream stream) throws Exception {
         ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
+        // 打印所有线程的信息
         for (ThreadInfo threadInfo : threadMxBean.dumpAllThreads(true, true)) {
             stream.write(getThreadDumpString(threadInfo).getBytes());
         }
