@@ -27,10 +27,17 @@ import java.util.Map;
  */
 class InjvmExporter<T> extends AbstractExporter<T> {
 
+    /**
+     * 服务键
+     */
     private final String key;
-
+    /**
+     * Exporter集合
+     *
+     * key:服务键 com.alibaba.dubbo.examples.annotation.api.AnnotationService
+     */
     private final Map<String, Exporter<?>> exporterMap;
-
+    // key = com.alibaba.dubbo.examples.annotation.api.AnnotationService
     InjvmExporter(Invoker<T> invoker, String key, Map<String, Exporter<?>> exporterMap) {
         super(invoker);
         this.key = key;

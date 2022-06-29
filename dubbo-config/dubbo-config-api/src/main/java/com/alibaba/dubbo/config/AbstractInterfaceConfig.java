@@ -161,21 +161,35 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    /**
+     * 加载注册中心URL数组
+     *
+     * @param provider 是否是服务提供者
+     * @return URL数组
+     */
     protected List<URL> loadRegistries(boolean provider) {
+        // 检查配置数组
         checkRegistry();
+        // 创建注册中心URL数组
         List<URL> registryList = new ArrayList<URL>();
         if (registries != null && !registries.isEmpty()) {
             for (RegistryConfig config : registries) {
+                // 获得注册中心的地址
                 String address = config.getAddress();
                 if (address == null || address.length() == 0) {
+                    // 如果地址为null, 那么address=0.0.0.0
                     address = Constants.ANYHOST_VALUE;
                 }
+                // 从系统参数里将获得这个地址
                 String sysaddress = System.getProperty("dubbo.registry.address");
                 if (sysaddress != null && sysaddress.length() > 0) {
+                    // 如果有这个参数, 那么将其赋值给address
                     address = sysaddress;
                 }
+                // 有效地址
                 if (address.length() > 0 && !RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
                     Map<String, String> map = new HashMap<String, String>();
+                    // 将各种配置加入至map集合中
                     appendParameters(map, application);
                     appendParameters(map, config);
                     map.put("path", RegistryService.class.getName());
@@ -184,6 +198,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     if (ConfigUtils.getPid() > 0) {
                         map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
                     }
+                    // 如果没有protocol参数, 那么默认使用dubbo
                     if (!map.containsKey("protocol")) {
                         if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
                             map.put("protocol", "remote");
@@ -191,12 +206,18 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                             map.put("protocol", "dubbo");
                         }
                     }
+                    // 解析地址, 创建dubbo URL数组
                     List<URL> urls = UrlUtils.parseURLs(address, map);
+                    // 循环url, 设置registry和protocol属性
                     for (URL url : urls) {
+                        // 设置 `registry=${protocol}` 和 `protocol=registry` 到 URL
                         url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
                         url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
+                        // (是提供者 && url包含'register') || (非提供者 && url中包含'subscribe'参数)
+                        // 达到以上条件, 就添加到registryList中
                         if ((provider && url.getParameter(Constants.REGISTER_KEY, true))
                                 || (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true))) {
+                            // 添加到结果
                             registryList.add(url);
                         }
                     }

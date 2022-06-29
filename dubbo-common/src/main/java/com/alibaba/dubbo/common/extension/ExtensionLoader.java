@@ -26,8 +26,7 @@ import com.alibaba.dubbo.common.utils.ConfigUtils;
 import com.alibaba.dubbo.common.utils.Holder;
 import com.alibaba.dubbo.common.utils.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -72,10 +71,10 @@ public class ExtensionLoader<T> {
 
     /**
      * 拓展实现类集合
-     *
+     * <p>
      * key:拓展实现类
      * value:拓展对象
-     *
+     * <p>
      * 例如:
      * key为class<AccessLogFilter>
      * value为AccessLogFilter
@@ -97,7 +96,7 @@ public class ExtensionLoader<T> {
      * 缓存的拓展对象集合
      * key:拓展名
      * value:拓展对象
-     *
+     * <p>
      * 例如:Protocol拓展
      * key:dubbo value:DubboProtocol
      * key:injvm value:InjvmProtocol
@@ -183,7 +182,7 @@ public class ExtensionLoader<T> {
 
     /**
      * This is equivalent to {@code getActivateExtension(url, url.getParameter(key).split(","), null)}
-     *
+     * <p>
      * 获得符合自动激活条件的扩展对象数组
      *
      * @param url   url
@@ -315,8 +314,9 @@ public class ExtensionLoader<T> {
     /**
      * Find the extension with the given name. If the specified name is not found, then {@link IllegalStateException}
      * will be thrown.
-     *
+     * <p>
      * 返回指定名字拓展对象.如果指定名字的扩展不存在, 则抛出异常
+     *
      * @param name 扩展名
      * @return 拓展对象
      */
@@ -648,8 +648,9 @@ public class ExtensionLoader<T> {
      * cachedClasses属性, 缓存的拓展实现类集合, 它不包含如下两种类型的扩展实现
      * 1. 自适应扩展实现类, 扩展Adaptive实现类, 会添加到cachedAdaptiveClass属性中
      * 2. 带唯一参数为扩展接口的构造方法的实现类, 或者说拓展wrapper实现类
-     *
+     * <p>
      * 全部缓存 = cachedClasses + cachedAdaptiveClass + cacheWrapperClasses
+     *
      * @return
      */
     private Map<String, Class<?>> getExtensionClasses() {
@@ -715,7 +716,7 @@ public class ExtensionLoader<T> {
      * 从不同的目录里去读取扩展类
      *
      * @param extensionClasses 扩展的类
-     * @param dir 到那里去读呢?
+     * @param dir              到那里去读呢?
      */
     private void loadDirectory(Map<String, Class<?>> extensionClasses, String dir) {
         // 目录+类名, 得到一个文件名
@@ -896,6 +897,7 @@ public class ExtensionLoader<T> {
     private Class<?> createAdaptiveExtensionClass() {
         // 创建自适应
         String code = createAdaptiveExtensionClassCode();
+        // outputcodeToDisk(code, "C:\\work_space\\github\\dubbo\\dubbo-common\\src\\main\\java");
         // 类加载器
         ClassLoader classLoader = findClassLoader();
         // 编译器
@@ -904,8 +906,33 @@ public class ExtensionLoader<T> {
         return compiler.compile(code, classLoader);
     }
 
+    private void outputcodeToDisk(String code, String path) {
+        try {
+            Package aPackage = type.getPackage();
+            String name = aPackage.getName();
+            String regex = "\\.";
+            String[] split = name.split(regex);
+            for (String s : split) {
+                path = path + "\\" + s;
+            }
+            File xx = new File(path);
+            if (!xx.exists()) {
+                xx.mkdirs();
+            }
+            path = path + "\\" + type.getSimpleName() + "$Adaptive" + ".java";
+            System.err.println(path);
+            File file = new File(path);
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            fileOutputStream.write(code.getBytes("utf-8"));
+            fileOutputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * 创建自定义对象的code
+     *
      * @return
      */
     private String createAdaptiveExtensionClassCode() {

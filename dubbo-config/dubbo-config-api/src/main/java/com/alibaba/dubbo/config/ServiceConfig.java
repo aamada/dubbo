@@ -73,14 +73,23 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     private static final long serialVersionUID = 3033787999037024738L;
 
+    // 自适应Protocol实现对象, dubbo Protocol
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
-
+    // 自适应ProxyFactory实现对象
     private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     private static final Map<String, Integer> RANDOM_PORT_MAP = new HashMap<String, Integer>();
-
+    // 延迟执行的线程池
     private static final ScheduledExecutorService delayExportExecutor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("DubboServiceDelayExporter", true));
     private final List<URL> urls = new ArrayList<URL>();
+    /**
+     * 服务配置暴露的Exporter
+     * URL:Exporter不一定是1:1关系
+     * 例如:
+     * 未设置时, 会暴露local+remote两个, 也就是URL:Exporter=1:2
+     * 设置为空时, 不暴露, 也就是URL:Exporter=1:0
+     * 设置为Local或者Remote任一个时, 会暴露Local或Remote一个, 也就是URL:Exporter=1:1
+     */
     private final List<Exporter<?>> exporters = new ArrayList<Exporter<?>>();
     // interface type
     private String interfaceName;
@@ -386,12 +395,20 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrls() {
+        // 加载注册中心
         List<URL> registryURLs = loadRegistries(true);
+        // 循环`protocols`, 向逐个注册中心分组暴露服务
         for (ProtocolConfig protocolConfig : protocols) {
+            // 使用对应的协议，逐个向注册中心分组暴
+            // 露服务。在这个方法中，包含了本地和远程两种暴露方式。
+            // 在下文中，我们会看到，本地暴露不会向注册中心注册服务，
+            // 因为仅仅用于 JVM 内部本地调用，内存
+            // 中已经有相关信息。
             doExportUrlsFor1Protocol(protocolConfig, registryURLs);
         }
     }
 
+    // 加载注册中心的 com.alibaba.dubbo.common.URL` 数组
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         // 协议名
         String name = protocolConfig.getName();
@@ -570,6 +587,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
+                        // 这里是重点, 相当的复杂
                         Exporter<?> exporter = protocol.export(wrapperInvoker);
                         exporters.add(exporter);
                     }
@@ -585,16 +603,37 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         this.urls.add(url);
     }
 
+    /**
+     * 本地暴露服务
+     *
+     * @param url 注册中心URL
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void exportLocal(URL url) {
+        // injvm != url中的协议
         if (!Constants.LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
+            // injvm + 127.0.0.1 + 0
             URL local = URL.valueOf(url.toFullString())
                     .setProtocol(Constants.LOCAL_PROTOCOL)
                     .setHost(LOCALHOST)
                     .setPort(0);
-            StaticContext.getContext(Constants.SERVICE_IMPL_CLASS).put(url.getServiceKey(), getServiceClass(ref));
-            Exporter<?> exporter = protocol.export(
-                    proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
+            // StaticContext
+            // 服务key
+            // service class
+            StaticContext context = StaticContext.getContext(Constants.SERVICE_IMPL_CLASS);
+            context.put(url.getServiceKey(), getServiceClass(ref));
+            // 创建invoker对象, 该invoker对象, 执行invoker方法时, 内部会调用
+            // Service对象(ref)对应的调用方法
+            Invoker invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, local);
+            // dubbo protocol 暴露服务
+            // protocol有两个Wrapper拓展实现类:ProtocolFilterWrapper, ProtocolListenerWrapper
+            // 调用顺序为:
+            // Protocol$Adaptive => ProtocolFilterWrapper => ProtocolListenerWrapper => InjvmProtocol
+            // 就在这里, 可以认识到dubbo的spi功能
+            // 三个wrapper类
+            // 最终得到一个
+            // ListenerExporterWrapper -> InjvmExporter -> ProtocolFilterWrapper -> 过滤器链 -> url
+            Exporter<?> exporter = protocol.export(invoker);
             exporters.add(exporter);
             logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry");
         }

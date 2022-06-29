@@ -25,19 +25,19 @@ import com.alibaba.dubbo.common.extension.SPI;
 public interface ExporterListener {
 
     /**
-     * The exporter exported.
+     * The exporter exported. 当服务暴露完成
      *
-     * @param exporter
-     * @throws RpcException
+     * @param exporter 暴露器
+     * @throws RpcException 异常
      * @see com.alibaba.dubbo.rpc.Protocol#export(Invoker)
      */
     void exported(Exporter<?> exporter) throws RpcException;
 
     /**
-     * The exporter unexported.
+     * The exporter unexported. 当服务取消暴露完成
      *
-     * @param exporter
-     * @throws RpcException
+     * @param exporter 暴露器
+     * @throws RpcException 异常
      * @see com.alibaba.dubbo.rpc.Exporter#unexport()
      */
     void unexported(Exporter<?> exporter);

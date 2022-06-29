@@ -30,7 +30,7 @@ public class DubboExporter<T> extends AbstractExporter<T> {
     private final String key;
 
     private final Map<String, Exporter<?>> exporterMap;
-
+    // key =  com.alibaba.dubbo.examples.annotation.api.AnnotationService:20883
     public DubboExporter(Invoker<T> invoker, String key, Map<String, Exporter<?>> exporterMap) {
         super(invoker);
         this.key = key;

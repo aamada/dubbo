@@ -34,9 +34,16 @@ import java.util.Map;
  */
 public class InjvmProtocol extends AbstractProtocol implements Protocol {
 
+    /**
+     * 协议名
+     */
     public static final String NAME = Constants.LOCAL_PROTOCOL;
 
+    // 端口号
     public static final int DEFAULT_PORT = 0;
+    /**
+     * 单例, 在dubbo spi中, 被初始化, 有且仅有一次
+     */
     private static InjvmProtocol INSTANCE;
 
     public InjvmProtocol() {
@@ -83,6 +90,8 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // serviceKey也就是那个接口的类名com.alibaba.dubbo.examples.annotation.api.AnnotationService
+        // invoker, 持有过滤器
         return new InjvmExporter<T>(invoker, invoker.getUrl().getServiceKey(), exporterMap);
     }
 
