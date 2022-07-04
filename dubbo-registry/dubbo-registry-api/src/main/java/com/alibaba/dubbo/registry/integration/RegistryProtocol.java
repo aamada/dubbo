@@ -58,14 +58,21 @@ import static com.alibaba.dubbo.common.Constants.CHECK_KEY;
 /**
  * RegistryProtocol
  *
+ * 注册中心协议实现类
+ *
  */
 public class RegistryProtocol implements Protocol {
 
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
+    // 实例
     private static RegistryProtocol INSTANCE;
+    // 一个通知监听器
     private final Map<URL, NotifyListener> overrideListeners = new ConcurrentHashMap<URL, NotifyListener>();
-    //To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
-    //providerurl <--> exporter
+    // 为了解决RMI重复暴露的冲突
+    //To solve the problem of RMI repeated exposure port conflicts,
+    // 如果服务已经暴露过, 就不再暴露了
+    // the services that have been exposed are no longer exposed.
+    //provider-url <--> exporter
     private final Map<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<String, ExporterChangeableWrapper<?>>();
     private Cluster cluster;
     private Protocol protocol;
@@ -77,6 +84,7 @@ public class RegistryProtocol implements Protocol {
     }
 
     public static RegistryProtocol getRegistryProtocol() {
+        // 实例化一个注册协议
         if (INSTANCE == null) {
             ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(Constants.REGISTRY_PROTOCOL); // load
         }
@@ -132,26 +140,40 @@ public class RegistryProtocol implements Protocol {
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         //export invoker
+        // 暴露服务
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
 
+        // 获得注册中心URL
+        // zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=annotationprovider&dubbo=2.0.2&export=dubbo%3A%2F%2F192.168.204.1%3A20883%2Fcom.alibaba.dubbo.examples.annotation.api.AnnotationService%3Fanyhost%3Dtrue%26application%3Dannotationprovider%26bean.name%3DServiceBean%3Acom.alibaba.dubbo.examples.annotation.api.AnnotationService%26bind.ip%3D192.168.204.1%26bind.port%3D20883%26default.timeout%3D5000%26dubbo%3D2.0.2%26generic%3Dfalse%26interface%3Dcom.alibaba.dubbo.examples.annotation.api.AnnotationService%26methods%3DsayHello%26pid%3D17944%26side%3Dprovider%26timestamp%3D1656687043270&pid=17944&timestamp=1656687043225
         URL registryUrl = getRegistryUrl(originInvoker);
 
         //registry provider
+        // 获得注册中心对象
         final Registry registry = getRegistry(originInvoker);
+        // 获得服务提供者URL
         final URL registeredProviderUrl = getRegisteredProviderUrl(originInvoker);
 
         //to judge to delay publish whether or not
+        // 去决定是否延迟发布服务
         boolean register = registeredProviderUrl.getParameter("register", true);
 
+        // 向本地注册表, 注册服务提供者
         ProviderConsumerRegTable.registerProvider(originInvoker, registryUrl, registeredProviderUrl);
 
+        // 向本地注册表, 注册服务提供者
         if (register) {
             register(registryUrl, registeredProviderUrl);
             ProviderConsumerRegTable.getProviderWrapper(originInvoker).setReg(true);
         }
 
         // Subscribe the override data
-        // FIXME When the provider subscribes, it will affect the scene : a certain JVM exposes the service and call the same service. Because the subscribed is cached key with the name of the service, it causes the subscription information to cover.
+        // FIXME
+        // 当提供者订阅
+        //  When the provider subscribes,
+        //  it will affect the scene :
+        //  a certain JVM exposes the service and call the same service.
+        //  Because the subscribed is cached key with the name of the service,
+        //  it causes the subscription information to cover.
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registeredProviderUrl);
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl, originInvoker);
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
@@ -162,14 +184,22 @@ public class RegistryProtocol implements Protocol {
 
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
+        // 得到一个缓存key
         String key = getCacheKey(originInvoker);
+        // 从bounds获得, 是不是已经暴露过服务
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
         if (exporter == null) {
             synchronized (bounds) {
                 exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
                 if (exporter == null) {
+                    // 没有暴露过, 则进行暴露
+                    // 暴露代理类
+                    // 创建服务的代理对象
                     final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
+                    // 暴露服务, 创建Exporter对象
+                    // 使用export与invoker对象进行绑定
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>) protocol.export(invokerDelegete), originInvoker);
+                    // 添加到bounds中
                     bounds.put(key, exporter);
                 }
             }
@@ -248,6 +278,7 @@ public class RegistryProtocol implements Protocol {
      * @return
      */
     private URL getProviderUrl(final Invoker<?> origininvoker) {
+        // dubbo://192.168.204.1:20883/com.alibaba.dubbo.examples.annotation.api.AnnotationService?anyhost=true&application=annotationprovider&bean.name=ServiceBean:com.alibaba.dubbo.examples.annotation.api.AnnotationService&bind.ip=192.168.204.1&bind.port=20883&default.timeout=5000&dubbo=2.0.2&generic=false&interface=com.alibaba.dubbo.examples.annotation.api.AnnotationService&methods=sayHello&pid=17944&side=provider&timestamp=1656687043270
         String export = origininvoker.getUrl().getParameterAndDecoded(Constants.EXPORT_KEY);
         if (export == null || export.length() == 0) {
             throw new IllegalArgumentException("The registry export url is null! registry: " + origininvoker.getUrl());
@@ -260,13 +291,14 @@ public class RegistryProtocol implements Protocol {
     /**
      * Get the key cached in bounds by invoker
      *
-     * @param originInvoker
-     * @return
+     * @param originInvoker 原始的invoker
+     * @return cache key
      */
     private String getCacheKey(final Invoker<?> originInvoker) {
+        // 服务提供者URL
         URL providerUrl = getProviderUrl(originInvoker);
-        String key = providerUrl.removeParameters("dynamic", "enabled").toFullString();
-        return key;
+        // 生成一个key
+        return providerUrl.removeParameters("dynamic", "enabled").toFullString();
     }
 
     @Override
@@ -441,7 +473,9 @@ public class RegistryProtocol implements Protocol {
      */
     private class ExporterChangeableWrapper<T> implements Exporter<T> {
 
+        // 原Invoker对象
         private final Invoker<T> originInvoker;
+        // 暴露的Exporter对象
         private Exporter<T> exporter;
 
         public ExporterChangeableWrapper(Exporter<T> exporter, Invoker<T> originInvoker) {
@@ -506,6 +540,7 @@ public class RegistryProtocol implements Protocol {
                 logger.warn(t.getMessage(), t);
             }
 
+            // 提交一线程
             executor.submit(new Runnable() {
                 @Override
                 public void run() {
@@ -515,6 +550,7 @@ public class RegistryProtocol implements Protocol {
                             logger.info("Waiting " + timeout + "ms for registry to notify all consumers before unexport. Usually, this is called when you use dubbo API");
                             Thread.sleep(timeout);
                         }
+                        // 取消暴露
                         exporter.unexport();
                     } catch (Throwable t) {
                         logger.warn(t.getMessage(), t);

@@ -562,16 +562,24 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             if (!Constants.SCOPE_REMOTE.toString().equalsIgnoreCase(scope)) {
                 exportLocal(url);
             }
-            // export to remote if the config is not local (export to local only when config is local)
+            // 如果不是配置本地的话, 那么就暴露到远程
+            // export to remote if the config is not local
+            // 仅仅只有只配置了本地, 才会只暴露到本地
+            // (export to local only when config is local)
             if (!Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope)) {
                 if (logger.isInfoEnabled()) {
                     logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                 }
                 if (registryURLs != null && !registryURLs.isEmpty()) {
+                    // 遍历URL
                     for (URL registryURL : registryURLs) {
+                        // 动态注册
                         url = url.addParameterIfAbsent(Constants.DYNAMIC_KEY, registryURL.getParameter(Constants.DYNAMIC_KEY));
+                        // 监控中心的URL
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
+                            // monitor
+                            // url中就包含了监控中心的配置
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                         }
                         if (logger.isInfoEnabled()) {
@@ -579,23 +587,36 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         }
 
                         // For providers, this is used to enable custom proxy to generate invoker
+                        // proxy
                         String proxy = url.getParameter(Constants.PROXY_KEY);
                         if (StringUtils.isNotEmpty(proxy)) {
+                            // 添加一个参数
                             registryURL = registryURL.addParameter(Constants.PROXY_KEY, proxy);
                         }
 
+
+                        // Protocol$Adaptive => ProtocolFilterWrapper => ProtocolListenerWrapper => InjvmProtocol
+                        // 这里的内容, 也可以回头看一眼本地的暴露
+                        // 这是一条调用链, 包含两条小的调用链
+                        // 使用proxyFactory创建Invoker对象
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
+                        // 创建DelegateProviderMetaDataInvoker对象
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
                         // 这里是重点, 相当的复杂
+                        // 使用Protocol暴露Invoker对象
                         Exporter<?> exporter = protocol.export(wrapperInvoker);
+                        // 添加到exporters中
                         exporters.add(exporter);
                     }
                 } else {
+                    // 用于被服务消费者直连服务提供者
                     Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
+                    // 使用ProxyFactory创建Invoker对象
                     DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-
+                    // 使用Protocol暴露Invoker对象
                     Exporter<?> exporter = protocol.export(wrapperInvoker);
+                    // 添加到集合中
                     exporters.add(exporter);
                 }
             }

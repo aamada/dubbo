@@ -227,14 +227,25 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         return registryList;
     }
 
+    /**
+     * 加载监控中心的URL
+     *
+     * @param registryURL 注册中心的URL
+     * @return 监控中心URL
+     */
     protected URL loadMonitor(URL registryURL) {
+        // 从属性配置中加载配置到MonitorConfig对象
         if (monitor == null) {
+            // dubbo.monitor.address
             String monitorAddress = ConfigUtils.getProperty("dubbo.monitor.address");
+            // dubbo.monitor.protocol
             String monitorProtocol = ConfigUtils.getProperty("dubbo.monitor.protocol");
             if ((monitorAddress == null || monitorAddress.length() == 0) && (monitorProtocol == null || monitorProtocol.length() == 0)) {
+                // 如果没有这些地址, 那么就说
                 return null;
             }
 
+            // 新建这个配置
             monitor = new MonitorConfig();
             if (monitorAddress != null && monitorAddress.length() > 0) {
                 monitor.setAddress(monitorAddress);
@@ -243,6 +254,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 monitor.setProtocol(monitorProtocol);
             }
         }
+        // 将属性追加到monitor中
         appendProperties(monitor);
         Map<String, String> map = new HashMap<String, String>();
         map.put(Constants.INTERFACE_KEY, MonitorService.class.getName());
@@ -262,19 +274,25 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         map.put(Constants.REGISTER_IP_KEY, hostToRegistry);
         appendParameters(map, monitor);
         appendParameters(map, application);
+        // 拿到这个地址
         String address = monitor.getAddress();
         String sysaddress = System.getProperty("dubbo.monitor.address");
         if (sysaddress != null && sysaddress.length() > 0) {
             address = sysaddress;
         }
+        // 直接监控中心服务器地址
         if (ConfigUtils.isNotEmpty(address)) {
+            // 若不存在Protocol参数, 默认dubbo添加到map集合中
             if (!map.containsKey(Constants.PROTOCOL_KEY)) {
                 if (ExtensionLoader.getExtensionLoader(MonitorFactory.class).hasExtension("logstat")) {
+                    // 如果有这个扩展, 就使用这个
                     map.put(Constants.PROTOCOL_KEY, "logstat");
                 } else {
+                    // 如果没有, 那么使用dubbo的
                     map.put(Constants.PROTOCOL_KEY, "dubbo");
                 }
             }
+            // 解析URL, 创建Dubbo URL对象
             return UrlUtils.parseURL(address, map);
         } else if (Constants.REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
             return registryURL.setProtocol("dubbo").addParameter(Constants.PROTOCOL_KEY, "registry").addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map));

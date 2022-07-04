@@ -15,10 +15,13 @@ public class Protocol$Adaptive implements Protocol {
         if (arg0 == null) throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument == null");
         if (arg0.getUrl() == null)
             throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument getUrl() == null");
+        // dubbo://192.168.204.1:20883/com.alibaba.dubbo.examples.annotation.api.AnnotationService?anyhost=true&application=annotationprovider&bean.name=ServiceBean:com.alibaba.dubbo.examples.annotation.api.AnnotationService&bind.ip=192.168.204.1&bind.port=20883&default.timeout=5000&dubbo=2.0.2&generic=false&interface=com.alibaba.dubbo.examples.annotation.api.AnnotationService&methods=sayHello&pid=17944&side=provider&timestamp=1656687043270
         com.alibaba.dubbo.common.URL url = arg0.getUrl();
+        // dubbo
         String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
         if (extName == null)
             throw new IllegalStateException("Fail to get extension(com.alibaba.dubbo.rpc.Protocol) name from url(" + url.toString() + ") use keys([protocol])");
+        // ProtocolFilterWrapper
         Protocol extension = (Protocol) ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(extName);
         return extension.export(arg0);
     }
