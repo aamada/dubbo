@@ -1,0 +1,25 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+participant ReferenceConfig
+entity ProxyFactory
+entity Invoker
+participant ProtocolAdaptive
+participant RegistryProtocol
+participant dubboProtocol
+participant dubboInvoker
+
+ReferenceConfig -> ReferenceConfig: createProxy(), \n创建代理对象
+ReferenceConfig -> ReferenceConfig:url()
+ReferenceConfig -> ProtocolAdaptive: invoker = refer()
+ProtocolAdaptive -> RegistryProtocol: invoker = refer()
+RegistryProtocol -> RegistryProtocol: invoker = doRefer()
+RegistryProtocol -> RegistryProtocol: directory = 创建RegistryDirectory对象
+RegistryProtocol -> RegistryProtocol:向注册中心注册自己(服务消费者)
+RegistryProtocol -> RegistryProtocol:向注册中心订阅服务提供者列表
+RegistryProtocol -> dubboProtocol:invoker = refer()
+dubboProtocol -> dubboProtocol: optimizeSerialization(url)
+dubboProtocol -> dubboProtocol:getClients(url)
+dubboProtocol -> dubboInvoker: 创建dubboInvoker对象()
+@enduml
