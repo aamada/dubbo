@@ -69,13 +69,21 @@ public class ProtocolListenerWrapper implements Protocol {
 
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        // 注册中心协议
+        // InjvmProtocol
+        Invoker<T> refer = protocol.refer(type, url);
         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-            return protocol.refer(type, url);
+            // 引用服务
+            return refer;
         }
-        return new ListenerInvokerWrapper<T>(protocol.refer(type, url),
-                Collections.unmodifiableList(
-                        ExtensionLoader.getExtensionLoader(InvokerListener.class)
-                                .getActivateExtension(url, Constants.INVOKER_LISTENER_KEY)));
+        // 获得InvokerListeners数组
+        List<InvokerListener> listeners = ExtensionLoader
+                .getExtensionLoader(InvokerListener.class)
+                .getActivateExtension(url, Constants.INVOKER_LISTENER_KEY);
+        // 包装成不可变
+        List<InvokerListener> listeners2 = Collections.unmodifiableList(listeners);
+        // 创建ListenerInvokerWrapper
+        return new ListenerInvokerWrapper<T>(refer, listeners2);
     }
 
     @Override

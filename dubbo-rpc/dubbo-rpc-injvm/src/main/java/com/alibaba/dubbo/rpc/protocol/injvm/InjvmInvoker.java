@@ -32,8 +32,14 @@ import java.util.Map;
  */
 class InjvmInvoker<T> extends AbstractInvoker<T> {
 
+    /**
+     * 服务的key
+     */
     private final String key;
 
+    /**
+     * 服务集合
+     */
     private final Map<String, Exporter<?>> exporterMap;
 
     InjvmInvoker(Class<T> type, URL url, String key, Map<String, Exporter<?>> exporterMap) {
@@ -44,10 +50,12 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
 
     @Override
     public boolean isAvailable() {
+        // 判断是否有Exporter对象?
         InjvmExporter<?> exporter = (InjvmExporter<?>) exporterMap.get(key);
         if (exporter == null) {
             return false;
         } else {
+            // 如果有的话, 往上调用
             return super.isAvailable();
         }
     }

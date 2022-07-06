@@ -191,6 +191,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         ref = null;
     }
 
+    /**
+     * 形如初始化
+     */
     private void init() {
         if (initialized) {
             // 如果已经初始化了, 那么返回
@@ -377,28 +380,38 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
         URL tmpUrl = new URL("temp", "localhost", 0, map);
+        // 是否是本地调用?
         final boolean isJvmRefer;
+        // injvm属性为空, 不通过该属性判断
         if (isInjvm() == null) {
-            if (url != null && url.length() > 0) { // if a url is specified, don't do local reference
+            if (url != null && url.length() > 0) {
+                // if a url is specified, don't do local reference
                 isJvmRefer = false;
+                // 通过url判断, 是否需要本地引用
             } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl)) {
                 // by default, reference local service if there is
                 isJvmRefer = true;
             } else {
+                // 默认不是
                 isJvmRefer = false;
             }
         } else {
+            // 通过isjvm属性进行判断
             isJvmRefer = isInjvm().booleanValue();
         }
 
+        // 本地引用
         if (isJvmRefer) {
+            // 创建服务引用URL对象
             URL url = new URL(Constants.LOCAL_PROTOCOL, NetUtils.LOCALHOST, 0, interfaceClass.getName()).addParameters(map);
             // invoker唤醒, 引用
             // 协议
+            // 引用服务, 返回Invoker对象
             invoker = refprotocol.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
+            // 正常流程, 一般为远程调用
         } else {
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
                 String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
@@ -452,6 +465,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
         }
 
+        // 启动时检查
         Boolean c = check;
         if (c == null && consumer != null) {
             c = consumer.isCheck();
