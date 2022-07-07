@@ -39,11 +39,17 @@ import java.util.List;
 
 public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatcher> {
 
+    /**
+     * 工具
+     */
     private final CuratorFramework client;
 
+    // 构造函数
     public CuratorZookeeperClient(URL url) {
+        // 创建父类, 注册足以的URL
         super(url);
         try {
+            // 超时时间
             int timeout = url.getParameter(Constants.TIMEOUT_KEY, 5000);
             CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
                     .connectString(url.getBackupAddress())
@@ -75,6 +81,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
     @Override
     public void createPersistent(String path) {
         try {
+            // 创建永久节点
             client.create().forPath(path);
         } catch (NodeExistsException e) {
         } catch (Exception e) {
@@ -85,6 +92,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
     @Override
     public void createEphemeral(String path) {
         try {
+            // 创建临时节点
             client.create().withMode(CreateMode.EPHEMERAL).forPath(path);
         } catch (NodeExistsException e) {
         } catch (Exception e) {
@@ -95,6 +103,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
     @Override
     protected void deletePath(String path) {
         try {
+            // 删除路径
             client.delete().forPath(path);
         } catch (NoNodeException e) {
         } catch (Exception e) {
@@ -105,6 +114,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
     @Override
     public List<String> getChildren(String path) {
         try {
+            //  获得子路径
             return client.getChildren().forPath(path);
         } catch (NoNodeException e) {
             return null;
@@ -116,6 +126,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
     @Override
     public boolean checkExists(String path) {
         try {
+            // 是否存在
             if (client.checkExists().forPath(path) != null) {
                 return true;
             }
@@ -133,6 +144,13 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
         client.close();
     }
 
+    /**
+     * 添加监听器
+     *
+     * @param path 路径
+     * @param listener 监听器
+     * @return 监听器
+     */
     @Override
     public CuratorWatcher createTargetChildListener(String path, ChildListener listener) {
         return new CuratorWatcherImpl(listener);
